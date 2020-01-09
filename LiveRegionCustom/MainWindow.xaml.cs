@@ -26,6 +26,9 @@ namespace LiveRegionCustom
     /// </summary>
     public partial class MainWindow : Window
     {
+        /// <summary>
+        /// From https://docs.microsoft.com/en-us/windows/win32/winauto/uiauto-event-ids
+        /// </summary>
         const int UIA_LiveRegionChangedEventId = 20024;
 
         public MainWindow()
@@ -40,10 +43,12 @@ namespace LiveRegionCustom
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
+            // Query to ensure we have a definition for the LiveRegionChanged event.
             _liveRegionsSupported = AutomationEvent.LookupById(UIA_LiveRegionChangedEventId) != null;
 
             if (_liveRegionsSupported)
             {
+                // Query and store the LiveSettingProperty to later apply to our TextBlock.
                 if (_liveSettingProperty == null)
                 {
                     _liveSettingProperty = typeof(AutomationProperties).GetField("LiveSettingProperty", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public).GetValue(null) as DependencyProperty;
@@ -51,6 +56,8 @@ namespace LiveRegionCustom
 
                 if (_liveSettingProperty != null)
                 {
+                    // Apply "Assertive" to our TextBlock.
+                    // See: https://docs.microsoft.com/en-us/dotnet/api/system.windows.automation.automationlivesetting?view=netframework-4.8
                     Updater.SetValue(_liveSettingProperty, Enum.Parse(_liveSettingProperty.PropertyType, "2"));
                 }
             }
@@ -58,12 +65,19 @@ namespace LiveRegionCustom
 
         int count = 0;
 
+        // Store the correct WPF AutomationEvent
+        // See: https://docs.microsoft.com/en-us/dotnet/api/system.windows.automation.peers.automationevents?view=netframework-4.8
         const AutomationEvents LiveRegionChangedEvent = (AutomationEvents)18;
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             Updater.Text = count++.ToString();
-            UIElementAutomationPeer.FromElement(Updater).RaiseAutomationEvent(LiveRegionChangedEvent);
+
+            // Raise the event if supported.
+            if (_liveRegionsSupported)
+            {
+                UIElementAutomationPeer.FromElement(Updater).RaiseAutomationEvent(LiveRegionChangedEvent);
+            }
         }
     }
 }
